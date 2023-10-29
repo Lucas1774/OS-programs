@@ -1,14 +1,40 @@
 #!/bin/bash
 
-#Demonio Dummie, tenéis que completarlo para que haga algo
+# Dummy Demon, you have to complete it to make it do something
 
-#Bucle mientras que no llegue el apocalipsis
-#   -Espera un segundo
-#   -Lee las listas y revive los procesos cuando sea necaario dejando entradas en la biblia
-#   -Puede usar todos los ficheros temporales que quiera pero luego en el Apocalipsis hay que borrarlos
-#   -Hay que usar un lock para no acceder a las listas a la vez que Fausto
-#   -Ojo al cerrar los proceos, hay que terminar el arbol completo no sólo uno de ellos
-#Fin bucle
+# Loop until the apocalypse arrives
+#   - Wait for one second
+#   - Read the lists and revive processes when necessary, leaving entries in the Bible
+#   - You can use as many temporary files as you want, but they must be deleted in the Apocalypse
+#   - Use a lock to avoid accessing the lists at the same time as Fausto
+#   - Be careful when closing processes; you must terminate the entire tree, not just one of them
+# End of the loop
 
-#Apocalipsis: termino todos los procesos y limpio todo dejando sólo Fausto, el Demonio y la Biblia
-   
+# Apocalypse: terminate all processes and clean up everything, leaving only Fausto, the Demon, and the Bible
+
+# Trap to handle cleanup during the Apocalypse
+trap 'kill $(jobs -p)' EXIT
+
+# Loop until the apocalypse arrives
+while true; do
+  # Wait for one second
+  sleep 1
+
+  # Acquire a lock to access the lists
+  exec 9<>.lock
+
+  # Read the "procesos" file to check for processes to revive
+  while read -r line; do
+    pid=$(echo "$line" | awk '{print $1}')
+    command_to_run=$(echo "$line" | cut -d' ' -f2-)
+
+    # Check if the process is still alive
+    if ! kill -0 "$pid" 2>/dev/null; then
+      # Revive the process in the background
+      bash -c "$command_to_run" &
+    fi
+  done < procesos
+
+  # Release the lock
+  exec 9>&-
+done
