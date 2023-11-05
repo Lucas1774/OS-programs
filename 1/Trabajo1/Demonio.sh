@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Constants
+LOG_FILE="Biblia.txt"
+PROCESS_LIST="procesos"
+SERVICE_LIST="procesos_servicio"
+PERIODIC_LIST="procesos_periodicos"
+LOCK_FILE="SanPedro"
+HELL_DIR="Infierno"
+APOCALIPSIS_FILE="Apocalipsis"
+
 # Function to revive a process and log it in the Bible
 revive_process() {
   local pid="$1"
@@ -10,7 +19,7 @@ revive_process() {
     bash -c "$command" &
 
     # Log the revival in Biblia.txt
-    echo "$(date '+%T') El proceso $pid '$command' ha resucitado." >>Biblia.txt
+    echo "$(date '+%T') El proceso $pid '$command' ha resucitado." >>"$LOG_FILE"
   fi
 }
 
@@ -20,29 +29,37 @@ process_processes() {
 
   # Check and maintain the list
   if [ -f "$list_file" ]; then
+    # Iterate through lines
     while IFS= read -r line; do
       pid=$(echo "$line" | awk '{print $1}')
       command_to_run=$(echo "$line" | cut -d' ' -f2-)
-
-      if [ -e "Infierno/$pid" ]; then
-        # Kill the entire process tree
+      # If in hell folder -> kill tree, remove from queue
+      if [ -e "$HELL_DIR/$pid" ]; then
         pkill -P "$pid"
-        rm -f "Infierno/$pid"
-        echo "$(date '+%T') El proceso $pid '$command_to_run' ha sido destruido." >>Biblia.txt
-      elif ! kill -0 "$pid" 2>/dev/null; then
-        # TODO: Remove the entry if the process is no longer running
-        echo "$(date '+%T') El proceso $pid '$command_to_run' ha terminado." >>Biblia.txt
+        flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file"
+        rm -f "$HELL_DIR/$pid"
+        echo "$(date '+%T') El proceso $pid '$command_to_run' ha sido destruido." >>"$LOG_FILE"
+      # If dead -> remove from queue
+      elif ! ps | grep "$pid"; then
+        flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file"
+        echo "$(date '+%T') El proceso $pid '$command_to_run' ha terminado." >>"$LOG_FILE"
       fi
-    done <"$list_file"
+    done
   fi
 }
 
 # Loop until Apocalipsis arrives
-while ! [ -f "Apocalipsis" ]; do
+until [ -f "$APOCALIPSIS_FILE" ]; do
   sleep 1
-  process_processes "procesos"
-  process_processes "procesos_servicio"
-  process_processes "procesos_periodicos"
+  process_processes "$PROCESS_LIST"
+  process_processes "$SERVICE_LIST"
+  process_processes "$PERIODIC_LIST"
 done
 
-echo "$(date '+%T') Se acabó el mundo." >>Biblia.txt
+# Remove files and hell directory
+rm -f "$PROCESS_LIST" "$SERVICE_LIST" "$PERIODIC_LIST" "$LOCK_FILE" "$APOCALIPSIS_FILE"
+rm -rf "$HELL_DIR"
+
+# Commit suicide
+echo "$(date '+%T') Se acabó el mundo." >>"$LOG_FILE"
+pkill -f "[D]emonio" >>/dev/null

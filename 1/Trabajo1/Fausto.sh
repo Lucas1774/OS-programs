@@ -11,7 +11,7 @@ APOCALIPSIS_FILE="Apocalipsis"
 
 # -----LAUNCHING "DEMONIO"-----
 # Check if the "Demonio" process is running
-if ! pgrep -x "Demonio"; then
+if ! pgrep -x "Demonio.sh" >/dev/null; then
   # Remove files and directory if they exist
   rm -f "$PROCESS_LIST" "$SERVICE_LIST" "$PERIODIC_LIST" "$LOG_FILE" "$LOCK_FILE" "$APOCALIPSIS_FILE"
   rm -rf "$HELL_DIR"
@@ -35,7 +35,8 @@ check_arguments() {
   local required_arg_count="$2"
   local received_arg_count="$3"
   if [ "$received_arg_count" -ne "$required_arg_count" ]; then
-    echo "Uso: $0 $command_name <arg1> <arg2> ..."
+    echo "Argumentos esperados: '$required_arg_count'"
+    echo "Argumentos recibidos: '$received_arg_count'"
     exit 1
   fi
 }
@@ -100,7 +101,7 @@ help)
 
 stop)
   check_arguments "$1" 2 "$#"
-  local pid_to_stop="$2"
+  pid_to_stop="$2"
 
   if [ -f "$PROCESS_LIST" ] || [ -f "$SERVICE_LIST" ] || [ -f "$PERIODIC_LIST" ]; then
     # Check if the PID exists in any of the lists
@@ -111,7 +112,7 @@ stop)
       echo "PID $pid_to_stop no está en las listas. Usa './Fausto.sh list'"
     fi
   else
-    echo "Las listas ($PROCESS_LIST, $SERVICE_LIST, and $PERIODIC_LIST) no existen o están vacías."
+    echo "Las listas ($PROCESS_LIST, $SERVICE_LIST, and $PERIODIC_LIST) no existen."
   fi
   exit 0
   ;;
