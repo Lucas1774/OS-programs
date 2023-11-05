@@ -1,22 +1,31 @@
 #!/bin/bash
 
+# Constants
+LOG_FILE="Biblia.txt"
+PROCESS_LIST="procesos"
+SERVICE_LIST="procesos_servicio"
+PERIODIC_LIST="procesos_periodicos"
+LOCK_FILE="SanPedro"
+HELL_DIR="Infierno"
+APOCALIPSIS_FILE="Apocalipsis"
+
 # -----LAUNCHING "DEMONIO"-----
 # Check if the "Demonio" process is running
 if ! pgrep -x "Demonio"; then
   # Remove files and directory if they exist
-  rm -f procesos procesos_servicio procesos_periodicos Biblia.txt SanPedro Apocalipsis
-  rm -rf Infierno
+  rm -f "$PROCESS_LIST" "$SERVICE_LIST" "$PERIODIC_LIST" "$LOG_FILE" "$LOCK_FILE" "$APOCALIPSIS_FILE"
+  rm -rf "$HELL_DIR"
 
   # Create the necessary files and folders
-  touch procesos procesos_servicio procesos_periodicos Biblia.txt SanPedro
-  mkdir Infierno
+  touch "$PROCESS_LIST" "$SERVICE_LIST" "$PERIODIC_LIST" "$LOG_FILE" "$LOCK_FILE"
+  mkdir "$HELL_DIR"
 
   # Start it and perform setup tasks
   nohup ./Demonio.sh >/dev/null &
 
   # Record the creation of the demon in Biblia.txt
-  echo "$(date '+%T'): ---------------Génesis---------------" >>Biblia.txt
-  echo "$(date '+%T') El demonio ha sido creado" >>Biblia.txt
+  echo "$(date '+%T'): ---------------Génesis---------------" >>"$LOG_FILE"
+  echo "$(date '+%T') El demonio ha sido creado" >>"$LOG_FILE"
 fi
 
 # -----RUNNING COMMAND-----
@@ -24,96 +33,91 @@ fi
 check_arguments() {
   local command_name="$1"
   local required_arg_count="$2"
-  local recieved_arg_count="$3"
-  if [ $recieved_arg_count -ne "$required_arg_count" ]; then
+  local received_arg_count="$3"
+  if [ "$received_arg_count" -ne "$required_arg_count" ]; then
     echo "Uso: $0 $command_name <arg1> <arg2> ..."
     exit 1
   fi
 }
 
-# Lock file
-lock_file="SanPedro"
-
 # Script
 case "$1" in
 run)
-  check_arguments "$1" 2 $#
+  check_arguments "$1" 2 "$#"
   command="${@:2}"
   bash -c "$command" &
   pid=$!
 
   # Record the event list and bible
-  flock $lock_file echo "$pid '$command'" >>"procesos"
-  echo "$(date '+%T'): El proceso $pid '$command' ha nacido." >>Biblia.txt
+  flock "$LOCK_FILE" echo "$pid '$command'" >>"$PROCESS_LIST"
+  echo "$(date '+%T'): El proceso $pid '$command' ha nacido." >>"$LOG_FILE"
   exit 0
   ;;
 
 run-service)
-  check_arguments "$1" 2 $#
+  check_arguments "$1" 2 "$#"
   service_command="${@:2}"
   bash -c "$service_command" &
   service_pid=$!
 
   # Record the event list and bible
-  flock $lock_file echo "$service_pid '$service_command'" >>"procesos_servicio"
-  echo "$(date '+%T'): El proceso servicio $service_pid '$service_command' ha nacido." >>Biblia.txt
+  flock "$LOCK_FILE" echo "$service_pid '$service_command'" >>"$SERVICE_LIST"
+  echo "$(date '+%T'): El proceso servicio $service_pid '$service_command' ha nacido." >>"$LOG_FILE"
   exit 0
   ;;
 
 run-periodic)
-  check_arguments "$1" 3 $#
+  check_arguments "$1" 3 "$#"
   period="$2"
   periodic_command="${@:3}"
   bash -c "$periodic_command" &
   pid=$!
 
   # Record the event list and bible
-  flock $lock_file echo "0 $period $pid '$periodic_command'" >>"procesos_periodicos"
-  echo "$(date '+%T'): El proceso periódico $pid '$periodic_command' ha nacido." >>Biblia.txt
+  flock "$LOCK_FILE" echo "0 $period $pid '$periodic_command'" >>"$PERIODIC_LIST"
+  echo "$(date '+%T'): El proceso periódico $pid '$periodic_command' ha nacido." >>"$LOG_FILE"
   exit 0
   ;;
 
 list)
-  check_arguments "$1" 1 $#
-  echo "Contents of list files:"
-  cat "procesos"
-  cat "procesos_servicio"
-  cat "procesos_periodicos"
+  check_arguments "$1" 1 "$#"
+  echo "Lista de procesos:"
+  cat "$PROCESS_LIST" "$SERVICE_LIST" "$PERIODIC_LIST"
   exit 0
   ;;
 
 help)
-  check_arguments "$1" 1 $#
+  check_arguments "$1" 1 "$#"
   echo "Comandos disponibles y su sintaxis:"
   echo "./Fausto.sh run <comando>"
   echo "./Fausto.sh run-service <comando>"
   echo "./Fausto.sh run-periodic <periodo> <comando>"
-  echo "./Fausto.sh list (Mostrar el contenido de las listas: procesos, procesos_servicio y procesos_periodicos)"
+  echo "./Fausto.sh list (Mostrar el contenido de las listas: $PROCESS_LIST, $SERVICE_LIST y $PERIODIC_LIST)"
   echo "./Fausto.sh help (Mostrar los comandos disponibles y su sintaxis)"
   echo "./Fausto.sh stop <PID> (Detener un proceso por su PID)"
   exit 0
   ;;
 
 stop)
-  check_arguments "$1" 2 $#
+  check_arguments "$1" 2 "$#"
   local pid_to_stop="$2"
 
-  if [ -f "procesos" ] || [ -f "procesos_servicio" ] || [ -f "procesos_periodicos" ]; then
+  if [ -f "$PROCESS_LIST" ] || [ -f "$SERVICE_LIST" ] || [ -f "$PERIODIC_LIST" ]; then
     # Check if the PID exists in any of the lists
-    if grep -q "$pid_to_stop" procesos procesos_servicio procesos_periodicos; then
+    if grep -q "$pid_to_stop" "$PROCESS_LIST" "$SERVICE_LIST" "$PERIODIC_LIST"; then
       # Create a file in the 'Infierno' folder to signal the demon to stop the process
-      touch "Infierno/$pid_to_stop"
+      touch "$HELL_DIR/$pid_to_stop"
     else
       echo "PID $pid_to_stop no está en las listas. Usa './Fausto.sh list'"
     fi
   else
-    echo "Las listas (procesos, procesos_servicio, and procesos_periodicos) no existen o están vacías."
+    echo "Las listas ($PROCESS_LIST, $SERVICE_LIST, and $PERIODIC_LIST) no existen o están vacías."
   fi
   exit 0
   ;;
 
 end)
-  touch Apocalipsis
+  touch "$APOCALIPSIS_FILE"
   exit 0
   ;;
 
