@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# -----lAUNCHING "DEMONIO"-----
+# -----LAUNCHING "DEMONIO"-----
 # Check if the "Demonio" process is running
-if ! pgrep -x "Demonio" >/dev/null; then
+if ! pgrep -x "Demonio"; then
   # Remove files and directory if they exist
   rm -f procesos procesos_servicio procesos_periodicos Biblia.txt SanPedro Apocalipsis
   rm -rf Infierno
@@ -11,15 +11,15 @@ if ! pgrep -x "Demonio" >/dev/null; then
   touch procesos procesos_servicio procesos_periodicos Biblia.txt SanPedro
   mkdir Infierno
 
-  # If the "Demonio" process is not running, start it and perform setup tasks
-  ./Demonio.sh >/dev/null 2>&1 &
+  # Start it and perform setup tasks
+  nohup ./Demonio.sh >/dev/null &
 
   # Record the creation of the demon in Biblia.txt
   echo "$(date '+%T'): ---------------Génesis---------------" >>Biblia.txt
   echo "$(date '+%T') El demonio ha sido creado" >>Biblia.txt
 fi
 
-# -----RUN COMMAND-----
+# -----RUNNING COMMAND-----
 # Function to check if the required number of arguments are provided
 check_arguments() {
   local command_name="$1"
@@ -31,14 +31,8 @@ check_arguments() {
   fi
 }
 
-# Function to record an event
-record_event() {
-  local pid_file="$1"
-  local command="$2"
-  local pid=$!
-  echo "$pid '$command'" >>"$pid_file"
-  echo "$(date '+%T'): El proceso $pid '$command' ha nacido." >>Biblia.txt
-}
+# Lock file
+lock_file="SanPedro"
 
 # Script
 case "$1" in
@@ -49,7 +43,7 @@ run)
   pid=$!
 
   # Record the event list and bible
-  echo "$pid '$command'" >>"procesos"
+  flock $lock_file echo "$pid '$command'" >>"procesos"
   echo "$(date '+%T'): El proceso $pid '$command' ha nacido." >>Biblia.txt
   exit 0
   ;;
@@ -61,7 +55,7 @@ run-service)
   service_pid=$!
 
   # Record the event list and bible
-  echo "$service_pid '$service_command'" >>"procesos_servicio"
+  flock $lock_file echo "$service_pid '$service_command'" >>"procesos_servicio"
   echo "$(date '+%T'): El proceso servicio $service_pid '$service_command' ha nacido." >>Biblia.txt
   exit 0
   ;;
@@ -74,7 +68,7 @@ run-periodic)
   pid=$!
 
   # Record the event list and bible
-  echo "0 $period $pid '$periodic_command'" >>"procesos_periodicos"
+  flock $lock_file echo "0 $period $pid '$periodic_command'" >>"procesos_periodicos"
   echo "$(date '+%T'): El proceso periódico $pid '$periodic_command' ha nacido." >>Biblia.txt
   exit 0
   ;;
@@ -115,6 +109,12 @@ stop)
   else
     echo "Las listas (procesos, procesos_servicio, and procesos_periodicos) no existen o están vacías."
   fi
+  exit 0
+  ;;
+
+end)
+  touch Apocalipsis
+  exit 0
   ;;
 
 *)
