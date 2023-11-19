@@ -28,7 +28,7 @@ if ! pgrep -x "Demonio.sh" >/dev/null; then
   echo "$(date '+%T') El demonio ha sido creado" >>"$LOG_FILE"
 fi
 
-# -----RUNNING COMMAND-----
+# ----------------------------------------------------------------------
 # Function to check if the required number of arguments are provided
 check_arguments() {
   local command_name="$1"
@@ -45,10 +45,9 @@ check_arguments() {
 case "$1" in
 run)
   check_arguments "$1" 2 "$#"
-  command="${@:2}"
+  command="$2"
   bash -c "$command" &
   pid=$!
-
   # Record the event list and bible
   flock "$LOCK_FILE" echo "$pid '$command'" >>"$PROCESS_LIST"
   echo "$(date '+%T'): El proceso $pid '$command' ha nacido." >>"$LOG_FILE"
@@ -57,10 +56,9 @@ run)
 
 run-service)
   check_arguments "$1" 2 "$#"
-  service_command="${@:2}"
+  service_command="$2"
   bash -c "$service_command" &
   service_pid=$!
-
   # Record the event list and bible
   flock "$LOCK_FILE" echo "$service_pid '$service_command'" >>"$SERVICE_LIST"
   echo "$(date '+%T'): El proceso servicio $service_pid '$service_command' ha nacido." >>"$LOG_FILE"
@@ -70,10 +68,9 @@ run-service)
 run-periodic)
   check_arguments "$1" 3 "$#"
   period="$2"
-  periodic_command="${@:3}"
+  periodic_command="$3"
   bash -c "$periodic_command" &
   pid=$!
-
   # Record the event list and bible
   flock "$LOCK_FILE" echo "0 $period $pid '$periodic_command'" >>"$PERIODIC_LIST"
   echo "$(date '+%T'): El proceso periódico $pid '$periodic_command' ha nacido." >>"$LOG_FILE"

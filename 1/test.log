@@ -1,0 +1,159 @@
+nohup: se redirige la salida de error a la salida estándar
+
+************************************************************
+1) Debería de haberse creado el proceso Demonio
+la salida esperada es algo así
+systemd───systemd───Demonio.sh───sleep
+donde Demonio.sh no debe ser hijo de bash sino de systemd o similar
+************************************************************
+
+systemd───lightdm───lightdm───upstart───Demonio.sh───sleep
+
+************************************************************
+2) Lanzo algunos comandos y compruebo que se han creado
+Debería de haber un proceso normal
+'sleep 10; echo hola > test1.txt'
+Un proceso servicio 'yes > /dev/null'
+y dos periódicos, el normal y el lento
+Comparamos los procesos teóricamente lanzados y los que
+realmente existen
+************************************************************
+
+Procesos lanzados según Fausto:
+./Fausto.sh list
+Lista de procesos:
+30018 'sleep 10; echo hola >> test1.txt'
+30032 'yes > /dev/null'
+0 5 30039 'echo hola_periodico >> test2.txt'
+0 5 30045 'echo hola_periodico_lento >> test3.txt; sleep 20'
+
+Procesos existentes:
+ps -l
+F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN  TTY          TIME CMD
+0 S  1000  6018  6012  0  80   0 -  2059 wait   pts/2    00:00:00 bash
+0 S  1000 29427  1425  0  80   0 -  1671 wait   pts/2    00:00:00 bash
+0 S  1000 29430 29427  0  80   0 -  1375 hrtime pts/2    00:00:00 sleep
+0 S  1000 30004  6018  0  80   0 -  1674 wait   pts/2    00:00:00 Ejercicio1.sh
+0 S  1000 30014  1425  0  80   0 -  1686 wait   pts/2    00:00:00 Demonio.sh
+0 S  1000 30017 30014  0  80   0 -  1375 hrtime pts/2    00:00:00 sleep
+0 S  1000 30018  1425  0  80   0 -  1671 wait   pts/2    00:00:00 bash
+0 S  1000 30020 30018  0  80   0 -  1375 hrtime pts/2    00:00:00 sleep
+0 S  1000 30032  1425  0  80   0 -  1671 wait   pts/2    00:00:00 bash
+0 R  1000 30035 30032  0  80   0 -  1374 -      pts/2    00:00:00 yes
+0 S  1000 30045  1425  0  80   0 -  1671 wait   pts/2    00:00:00 bash
+0 S  1000 30048 30045  0  80   0 -  1375 hrtime pts/2    00:00:00 sleep
+0 R  1000 30053 30004  0  80   0 -  2189 -      pts/2    00:00:00 ps
+
+************************************************************
+3) Elimino manualmente el proceso yes sin avisar a Fausto.
+El Demonio debería detectarlo y reiniciar el proceso:
+************************************************************
+
+pkill yes
+
+bash: línea 1: 30035 Terminado               yes > /dev/null
+./Fausto.sh list
+Lista de procesos:
+30018 'sleep 10; echo hola >> test1.txt'
+30075 'yes > /dev/null'
+0 5 30039 'echo hola_periodico >> test2.txt'
+0 5 30045 'echo hola_periodico_lento >> test3.txt; sleep 20'
+
+************************************************************
+4) Elimino el proceso usando Fausto.
+El Demonio NO debe reiniciar el proceso:
+************************************************************
+
+./Fausto.sh stop 30075
+./Fausto.sh list
+Lista de procesos:
+30018 'sleep 10; echo hola >> test1.txt'
+0 5 30039 'echo hola_periodico >> test2.txt'
+0 5 30045 'echo hola_periodico_lento >> test3.txt; sleep 20'
+ps -l
+F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN  TTY          TIME CMD
+0 S  1000  6018  6012  0  80   0 -  2059 wait   pts/2    00:00:00 bash
+0 S  1000 30004  6018  0  80   0 -  1675 wait   pts/2    00:00:00 Ejercicio1.sh
+0 S  1000 30014  1425  0  80   0 -  1732 wait   pts/2    00:00:00 Demonio.sh
+0 S  1000 30018  1425  0  80   0 -  1671 wait   pts/2    00:00:00 bash
+0 S  1000 30020 30018  0  80   0 -  1375 hrtime pts/2    00:00:00 sleep
+0 S  1000 30045  1425  0  80   0 -  1671 wait   pts/2    00:00:00 bash
+0 S  1000 30048 30045  0  80   0 -  1375 hrtime pts/2    00:00:00 sleep
+0 S  1000 30075 30014  0  80   0 -  1671 wait   pts/2    00:00:00 bash
+0 R  1000 30077 30075 82  80   0 -  1374 -      pts/2    00:00:04 yes
+0 S  1000 30284 30014  0  80   0 -  1375 hrtime pts/2    00:00:00 sleep
+0 R  1000 30288 30004  0  80   0 -  2189 -      pts/2    00:00:00 ps
+
+************************************************************
+5) Error de sintaxis provocado para que Fausto nos avise:
+************************************************************
+
+./Fausto.sh asdf
+Uso: ./Fausto.sh {run | run-service | run-periodic | list | help | stop}
+
+************************************************************
+6) Siguiendo la sugerencia anterior veríamos la ayuda:
+************************************************************
+
+./Fausto.sh help
+Comandos disponibles y su sintaxis:
+./Fausto.sh run <comando>
+./Fausto.sh run-service <comando>
+./Fausto.sh run-periodic <periodo> <comando>
+./Fausto.sh list (Mostrar el contenido de las listas: procesos, procesos_servicio y procesos_periodicos)
+./Fausto.sh help (Mostrar los comandos disponibles y su sintaxis)
+./Fausto.sh stop <PID> (Detener un proceso por su PID)
+
+************************************************************
+7) Terminamos la ejecución y vemos los mensajes enviados
+por los procesos lanzados en los ficeheros test 1, 2 y 3
+************************************************************
+
+hola
+hola_periodico
+hola_periodico_lento
+
+************************************************************
+8) Comprobamos que no hay procesos sin terminar.
+Esperamos que sólo salgan bash, Ejercicio1.sh y ps
+************************************************************
+
+  PID TTY          TIME CMD
+ 6018 pts/2    00:00:00 bash
+30004 pts/2    00:00:00 Ejercicio1.sh
+30045 pts/2    00:00:00 bash
+30048 pts/2    00:00:00 sleep
+30075 pts/2    00:00:00 bash
+30077 pts/2    00:00:10 yes
+30442 pts/2    00:00:00 ps
+
+************************************************************
+9) Comprobamos que no hay ficerhos basura.
+Solo deben quedar Fausto.sh, Demonio.sh y la Biblia.txt
+************************************************************
+
+Biblia.txt  Demonio.sh	Fausto.sh
+
+************************************************************
+10) Comprobamos que no hay bloqueos pendientes
+no debería de salir nada:
+************************************************************
+
+
+************************************************************
+11) Finalmente mostramos la Biblia
+************************************************************
+
+22:45:28: ---------------Génesis---------------
+22:45:28 El demonio ha sido creado
+22:45:28: El proceso 30018 'sleep 10; echo hola >> test1.txt' ha nacido.
+22:45:28: El proceso servicio 30032 'yes > /dev/null' ha nacido.
+22:45:28: El proceso periódico 30039 'echo hola_periodico >> test2.txt' ha nacido.
+22:45:28: El proceso periódico 30045 'echo hola_periodico_lento >> test3.txt; sleep 20' ha nacido.
+22:45:29 El servicio 30032 'yes > /dev/null' ha resucitado con pid 30075.
+22:45:32 El proceso 30075 'yes > /dev/null' ha sido destruido.
+22:45:38 El proceso 30018 'sleep 10; echo hola >> test1.txt' ha terminado.
+22:45:38: ---------------Apocalipsis---------------
+22:45:38 El proceso 30039 'echo hola_periodico >> test2.txt' ha sido destruido.
+22:45:38 El proceso 30045 'echo hola_periodico_lento >> test3.txt; sleep 20' ha sido destruido.
+22:45:38 Se acabó el mundo.
