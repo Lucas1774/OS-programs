@@ -21,7 +21,7 @@ if ! pgrep -x "Demonio.sh" >/dev/null; then
   mkdir "$HELL_DIR"
 
   # Start it and perform setup tasks
-  nohup ./Demonio.sh >/dev/null &
+  nohup ./Demonio.sh >debug.log &
 
   # Record the creation of the demon in Biblia.txt
   echo "$(date '+%T'): ---------------Génesis---------------" >>"$LOG_FILE"
@@ -124,3 +124,4 @@ end)
   exit 1
   ;;
 esac
+
