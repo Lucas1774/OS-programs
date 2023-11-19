@@ -10,3 +10,5 @@ procesos_periodicos
 procesos_servicio
 SanPedro
 test*.txt
+
+.vscode
