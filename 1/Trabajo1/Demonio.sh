@@ -40,34 +40,31 @@ process() {
         rm -f "$HELL_DIR/$pid"
         echo "$(date '+%T') El proceso $pid $command_to_run ha sido destruido." >>"$LOG_FILE"
         kill_tree "$pid"
+      else
+        # If periodic adjust times
+        if [[ "$list_file" == "$PERIODIC_LIST" ]]; then
+          former_time=$(awk '{print $1}' <<<"$line")
+          ((current_time = former_time + 1))
+          total_time=$(awk '{print $2}' <<<"$line")
+          flock $LOCK_FILE sed -i "/$pid/ s/^$former_time /$current_time /g" $list_file
+        fi
+      fi
       # If dead
-      elif ! ps "$pid" >/dev/null; then
+      if ! ps "$pid" >/dev/null; then
+        flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file" # Remove from queue
         # If process
         if [[ "$list_file" == "$PROCESS_LIST" ]]; then
-          flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file"
           echo "$(date '+%T') El proceso $pid $command_to_run ha terminado." >>"$LOG_FILE"
         # If service
         elif [[ "$list_file" == "$SERVICE_LIST" ]]; then
-          flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file"
           # Revive
           clean_command_to_run=$(echo "$command_to_run" | tr -d "'") # Remove quotes
           bash -c "$clean_command_to_run" &
           new_pid=$!
           flock "$LOCK_FILE" echo "$new_pid" "$command_to_run" >>"$list_file"
           echo "$(date '+%T') El servicio $pid $command_to_run ha resucitado con pid "$new_pid"." >>"$LOG_FILE"
-        fi
-      fi
-      # If periodic
-      if [[ "$list_file" == "$PERIODIC_LIST" ]]; then
-        former_time=$(awk '{print $1}' <<<"$line")
-        ((current_time = former_time + 1))
-        total_time=$(awk '{print $2}' <<<"$line")
-        echo "former_time: $former_time"
-        echo "current_time: $current_time"
-        echo "total_time: $total_time"
-        flock $LOCK_FILE sed -i "/$pid/ s/^$former_time /$current_time" $list_file
-        # If it's dead and it shouldn't be dead
-        if ! ps "$pid" > /dev/null && [ "$current_time" -ge "$total_time" ]; then
+        # If periodic and shouldn't be dead
+        elif [[ "$current_time" -ge "$total_time" ]]; then
           # Revive
           clean_command_to_run=$(echo "$command_to_run" | tr -d "'") # Remove quotes
           bash -c "$clean_command_to_run" &

@@ -120,7 +120,7 @@ end)
   ;;
 
 *)
-  echo "Uso: $0 {run | run-service | run-periodic | list | help | stop}"
+  echo "Error: Uso: $0 {run | run-service | run-periodic | list | help | stop}"
   exit 1
   ;;
 esac
