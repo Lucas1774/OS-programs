@@ -101,8 +101,11 @@ stop)
   pid_to_stop="$2"
 
   if [ -f "$PROCESS_LIST" ] || [ -f "$SERVICE_LIST" ] || [ -f "$PERIODIC_LIST" ]; then
+    in_processes=$(awk -v pid="$pid_to_stop" '$1 == pid' "$PROCESS_LIST")
+    in_services=$(awk -v pid="$pid_to_stop" '$1 == pid' "$SERVICE_LIST")
+    in_periodic=$(awk -v pid="$pid_to_stop" '$3 == pid' "$PERIODIC_LIST")
     # Check if the PID exists in any of the lists
-    if grep -q "$pid_to_stop" "$PROCESS_LIST" "$SERVICE_LIST" "$PERIODIC_LIST"; then
+  if [[ $in_processes || $in_services || $in_periodic ]]; then
       # Create a file in the 'Infierno' folder to signal the demon to stop the process
       touch "$HELL_DIR/$pid_to_stop"
     else

@@ -11,10 +11,12 @@ APOCALIPSIS_FILE="Apocalipsis"
 
 # Function to kill a process tree
 kill_tree() {
-  pid="$1"
-  # tree -> tree with only PID -> space separated PIDs
-  childernPidsSpaceSeparated=$(pstree -p $pid | grep -o -E '[0-9]+' | tr '\n' ' ')
-  kill -SIGTERM "$childernPidsSpaceSeparated"
+    pid="$1"
+    pids=$(pstree -p $pid | grep -o -E '[0-9]+' | tr '\n' ' ')
+    IFS=' '
+    for pid_to_delete in $pids; do
+      kill -SIGTERM $pid_to_delete
+    done
 }
 
 # Function to process a list of processes
@@ -26,7 +28,6 @@ process() {
     # Iterate through lines
     IFS=$'\n' # Define line separator
     for line in $(cat "$list_file"); do
-      echo "line: $line"
       # Get pid and command
       if [[ "$list_file" != "$PERIODIC_LIST" ]]; then
         pid=$(echo "$line" | awk '{print $1}')
@@ -39,6 +40,7 @@ process() {
       if [[ -e "$HELL_DIR/$pid" ]]; then
         flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file"
         rm -f "$HELL_DIR/$pid"
+        echo "quitando proceso $pid de la carpeta infierno"
         echo "$(date '+%T') El proceso $pid $command_to_run ha sido destruido." >>"$LOG_FILE"
         kill_tree "$pid"
       else
