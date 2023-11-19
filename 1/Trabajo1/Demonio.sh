@@ -11,12 +11,12 @@ APOCALIPSIS_FILE="Apocalipsis"
 
 # Function to kill a process tree
 kill_tree() {
-    pid="$1"
-    pids=$(pstree -p $pid | grep -o -E '[0-9]+' | tr '\n' ' ')
-    IFS=' '
-    for pid_to_delete in $pids; do
-      kill -SIGTERM $pid_to_delete
-    done
+  pid="$1"
+  pids=$(pstree -p $pid | grep -o -E '[0-9]+' | tr '\n' ' ')
+  IFS=' '
+  for pid_to_delete in $pids; do
+    kill -SIGTERM $pid_to_delete
+  done
 }
 
 # Function to process a list of processes
@@ -40,7 +40,6 @@ process() {
       if [[ -e "$HELL_DIR/$pid" ]]; then
         flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file"
         rm -f "$HELL_DIR/$pid"
-        echo "quitando proceso $pid de la carpeta infierno"
         echo "$(date '+%T') El proceso $pid $command_to_run ha sido destruido." >>"$LOG_FILE"
         kill_tree "$pid"
       else
@@ -53,12 +52,13 @@ process() {
         fi
         # If dead
         if ! ps "$pid" >/dev/null; then
-          flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file" # Remove from queue
           # If process
           if [[ "$list_file" == "$PROCESS_LIST" ]]; then
+            flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file" # Remove from queue
             echo "$(date '+%T') El proceso $pid $command_to_run ha terminado." >>"$LOG_FILE"
           # If service
           elif [[ "$list_file" == "$SERVICE_LIST" ]]; then
+            flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file" # Remove from queue
             # Revive
             clean_command_to_run=$(echo "$command_to_run" | tr -d "'") # Remove quotes
             bash -c "$clean_command_to_run" &
@@ -67,6 +67,7 @@ process() {
             echo "$(date '+%T') El servicio $pid $command_to_run ha resucitado con pid "$new_pid"." >>"$LOG_FILE"
           # If periodic and shouldn't be dead
           elif [[ "$current_time" -ge "$total_time" ]]; then
+            flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file" # Remove from queue
             # Revive
             clean_command_to_run=$(echo "$command_to_run" | tr -d "'") # Remove quotes
             bash -c "$clean_command_to_run" &
