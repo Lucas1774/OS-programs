@@ -65,7 +65,7 @@ process() {
             new_pid=$!
             flock "$LOCK_FILE" echo "$new_pid" "$command_to_run" >>"$list_file"
             echo "$(date '+%T') El servicio $pid $command_to_run ha resucitado con pid "$new_pid"." >>"$LOG_FILE"
-          # If periodic and shouldn't be dead
+          # If periodic and overdue
           elif [[ "$current_time" -ge "$total_time" ]]; then
             flock "$LOCK_FILE" sed -i "/$pid/d" "$list_file" # Remove from queue
             # Revive
