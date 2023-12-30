@@ -18,7 +18,6 @@ typedef struct
 
 typedef struct
 {
-    long type;
     int sender;
     char content[3];
 } Message;
@@ -164,9 +163,8 @@ int main(int argc, char *argv[])
     }
 
     // play nice!
-    Message message;
-    int message_size = sizeof(message);
-    message.type = 1;
+    Message messages[number_of_children];
+    int message_size = sizeof(Message);
     close(barrier[0]);
     while (alive > 1)
     {
@@ -181,7 +179,13 @@ int main(int argc, char *argv[])
 
         for (int i = 0; i < alive; i++)
         {
-            msgrcv(message_queue_id, &message, message_size, message.type, 0);
+            msgrcv(message_queue_id, &messages[i], message_size, 0, 0);
+        }
+
+        Message message;
+        for (int i = 0; i < alive; i++)
+        {
+            message = messages[i];
             printf("mensaje recibido: %d %s\n", message.sender, message.content);
             fflush(stdout);
             if (strcmp(message.content, "KO") == 0)
@@ -203,7 +207,7 @@ int main(int argc, char *argv[])
             printf("%d ", children_status.array[i]);
             fflush(stdout);
         }
-        printf("\n");
+        printf("\n\n");
         fflush(stdout);
     }
     FILE *stack = fopen("resultado", "w");

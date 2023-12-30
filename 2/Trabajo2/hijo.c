@@ -19,7 +19,6 @@ typedef struct
 
 typedef struct
 {
-	long type;
 	int sender;
 	char content[3];
 } Message;
@@ -148,7 +147,7 @@ int main(int argc, char **argv)
 	add_self(&children_status, number_of_children, semaphore, semaphore_id);
 	close(barrier[1]);
 	Message message;
-	int message_size = sizeof(message);
+	int message_size = sizeof(Message);
 	char token;
 	while (1)
 	{
@@ -175,7 +174,6 @@ int main(int argc, char **argv)
 		}
 		usleep(100000);
 
-		message.type = 1;
 		message.sender = getpid();
 		strcpy(message.content, content);
 		msgsnd(message_queue_id, (struct msgbuf *)&message, message_size, 0);
