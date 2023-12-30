@@ -1,6 +1,7 @@
 *.txt
 *.odt
 *.pdf
+*.lnk
 
 Ejercicio1.sh
 Ejercicio2.sh
@@ -14,5 +15,7 @@ procesos_servicio
 SanPedro
 test*.txt
 Apocalipsis
+
+previous
 
 .vscode
