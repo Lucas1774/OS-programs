@@ -129,6 +129,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	SharedData children_status;
+	children_status.array = (int *)shmat(shared_memory_id, 0, 0);
+
 	// semaphore init
 	Semaphore semaphore;
 	semaphore.sem_num = 0;
@@ -139,9 +142,6 @@ int main(int argc, char **argv)
 		perror("semget");
 		exit(EXIT_FAILURE);
 	}
-
-	SharedData children_status;
-	children_status.array = (int *)shmat(shared_memory_id, 0, 0);
 
 	// play nice!
 	add_self(&children_status, number_of_children, semaphore, semaphore_id);

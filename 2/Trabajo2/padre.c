@@ -47,7 +47,7 @@ int get_alive(SharedData data, int number_of_children, Semaphore semaphore, int 
 // Removes an item from an array by value
 // @param data The structure to remove the item from
 // @param value The value of the item to remove
-void removeChild(SharedData *data, int number_of_children, int value, Semaphore semaphore, int semaphore_id)
+void remove_child(SharedData *data, int number_of_children, int value, Semaphore semaphore, int semaphore_id)
 {
     int alive = get_alive(*data, number_of_children, semaphore, semaphore_id);
     // lock
@@ -113,6 +113,13 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    SharedData children_status;
+    children_status.array = (int *)shmat(shared_memory_id, 0, 0);
+    for (int i = 0; i < number_of_children; i++)
+    {
+        children_status.array[i] = 0;
+    }
+
     // semaphore init
     Semaphore semaphore;
     semaphore.sem_num = 0;
@@ -123,15 +130,7 @@ int main(int argc, char *argv[])
         perror("semget");
         exit(EXIT_FAILURE);
     }
-
     semctl(semaphore_id, 0, SETVAL, 1);
-
-    SharedData children_status;
-    children_status.array = (int *)shmat(shared_memory_id, 0, 0);
-    for (int i = 0; i < number_of_children; i++)
-    {
-        children_status.array[i] = 0;
-    }
 
     // run children
     for (int i = 0; i < number_of_children; i++)
@@ -194,7 +193,7 @@ int main(int argc, char *argv[])
                 waitpid(message.sender, NULL, 0);
                 printf("El hijo %d ha sido eliminado\n", message.sender);
                 fflush(stdout);
-                removeChild(&children_status, number_of_children, message.sender, semaphore, semaphore_id);
+                remove_child(&children_status, number_of_children, message.sender, semaphore, semaphore_id);
             }
         }
         alive = get_alive(children_status, number_of_children, semaphore, semaphore_id);
