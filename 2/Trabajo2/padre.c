@@ -163,7 +163,6 @@ int main(int argc, char *argv[])
 
     // play nice!
     Message messages[number_of_children];
-    int message_size = sizeof(Message);
     close(barrier[0]);
     while (alive > 1)
     {
@@ -178,7 +177,7 @@ int main(int argc, char *argv[])
 
         for (int i = 0; i < alive; i++)
         {
-            msgrcv(message_queue_id, &messages[i], message_size, 0, 0);
+            msgrcv(message_queue_id, &messages[i], sizeof(Message), 0, 0);
         }
 
         Message message;
