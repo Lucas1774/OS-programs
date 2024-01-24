@@ -65,7 +65,6 @@ void add_self(SharedData *data, int number_of_children, Semaphore semaphore, int
 
 // gets a random pid different from this process' from the participants
 // @param data The structure to get the pid from
-// @param value The value of the item to remove
 int get_non_self_pid(SharedData *data, int number_of_children, Semaphore semaphore, int semaphore_id)
 {
 	int alive = get_alive(*data, number_of_children, semaphore, semaphore_id);
