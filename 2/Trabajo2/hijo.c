@@ -147,7 +147,6 @@ int main(int argc, char **argv)
 	add_self(&children_status, number_of_children, semaphore, semaphore_id);
 	close(barrier[1]);
 	Message message;
-	int message_size = sizeof(Message);
 	char token;
 	while (1)
 	{
@@ -158,15 +157,12 @@ int main(int argc, char **argv)
 		if (does_defend == 1)
 		{
 			signal(SIGUSR1, react_defending);
+			usleep(100000);
 		}
 		else
 		{
 			signal(SIGUSR1, react_dying);
-		}
-		usleep(100000);
-
-		if (does_defend == 0)
-		{
+			usleep(100000);
 			int attacked_pid = get_non_self_pid(&children_status, number_of_children, semaphore, semaphore_id);
 			printf("Proceso %d atacando al proceso %d\n", getpid(), attacked_pid);
 			fflush(stdout);
@@ -176,6 +172,6 @@ int main(int argc, char **argv)
 
 		message.sender = getpid();
 		strcpy(message.content, content);
-		msgsnd(message_queue_id, (struct msgbuf *)&message, message_size, 0);
+		msgsnd(message_queue_id, (struct msgbuf *)&message, sizeof(Message), 0);
 	}
 }
