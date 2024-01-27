@@ -29,7 +29,7 @@ typedef struct sembuf Semaphore;
 // global message content since it can't be accessed at custom signal handler
 char content[3];
 
-// @param shared memory
+// @param data Shared memory to get the alive amount from
 // @return number of processes alive
 int get_alive(SharedData data, int number_of_children, Semaphore semaphore, int semaphore_id)
 {
@@ -63,7 +63,7 @@ void add_self(SharedData *data, int number_of_children, Semaphore semaphore, int
 	semop(semaphore_id, &semaphore, 1);
 }
 
-// gets a random pid different from this process' from the participants
+// gets a random pid different from this process' from the alive participants
 // @param data The structure to get the pid from
 int get_non_self_pid(SharedData *data, int number_of_children, Semaphore semaphore, int semaphore_id)
 {
@@ -71,18 +71,18 @@ int get_non_self_pid(SharedData *data, int number_of_children, Semaphore semapho
 	// lock
 	semaphore.sem_op = -1;
 	semop(semaphore_id, &semaphore, 1);
-	// pick attacker (not this)
-	int attacker = getpid();
-	int attacker_id;
-	while (getpid() == attacker)
+	// pick attacked (not this)
+	int attacked = getpid();
+	int attacked_id;
+	while (getpid() == attacked)
 	{
-		attacker_id = rand() % alive;
-		attacker = data->array[attacker_id];
+		attacked_id = rand() % alive;
+		attacked = data->array[attacked_id];
 	}
 	// unlock
 	semaphore.sem_op = 1;
 	semop(semaphore_id, &semaphore, 1);
-	return attacker;
+	return attacked;
 }
 
 void react_defending()
