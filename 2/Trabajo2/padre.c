@@ -25,7 +25,7 @@ typedef struct
 // Useless wrapper for abstraction
 typedef struct sembuf Semaphore;
 
-// @param shared memory
+// @param data Shared memory to get the alive amount from
 // @return number of processes alive
 int get_alive(SharedData data, int number_of_children, Semaphore semaphore, int semaphore_id)
 {
