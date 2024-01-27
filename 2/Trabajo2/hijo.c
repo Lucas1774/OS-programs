@@ -73,11 +73,11 @@ int get_non_self_pid(SharedData *data, int number_of_children, Semaphore semapho
 	semop(semaphore_id, &semaphore, 1);
 	// pick attacked (not this)
 	int attacked = getpid();
-	int attacked_id;
+	int attacked_index;
 	while (getpid() == attacked)
 	{
-		attacked_id = rand() % alive;
-		attacked = data->array[attacked_id];
+		attacked_index = rand() % alive;
+		attacked = data->array[attacked_index];
 	}
 	// unlock
 	semaphore.sem_op = 1;
